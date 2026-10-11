@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../api/axiosInstance';
-import { User, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function Register() {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -75,20 +75,6 @@ export default function Register() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label>Register As</label>
-            <div className="input-wrapper">
-              <ShieldCheck className="input-icon" size={18} />
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              >
-                <option value="user">Standard User</option>
-                <option value="admin">Administrator</option>
-              </select>
             </div>
           </div>
 
