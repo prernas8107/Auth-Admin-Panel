@@ -16,7 +16,7 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'user',
+      role: 'user', // Public registration can only register standard users
     });
 
     const token = generateToken(user._id, user.role);
