@@ -679,3 +679,135 @@ body {
   color: #4ade80;
   border: 1px solid rgba(74, 222, 128, 0.3);
 }
+
+/* ===== Admin Add User Modal & Button ===== */
+.btn-add-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--yellow-primary);
+  color: #000;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.btn-add-user:hover {
+  background: var(--yellow-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px var(--yellow-glow);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #0d0d0d;
+  border: 1px solid var(--yellow-border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px var(--yellow-glow);
+  position: relative;
+  animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+}
+
+.modal-header h3 {
+  font-size: 20px;
+  color: var(--yellow-primary);
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: #fff;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  background: #222;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #333;
+}
+
+.badge-super-admin {
+  background: rgba(250, 204, 21, 0.18);
+  color: var(--yellow-primary);
+  border: 1px solid var(--yellow-primary);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-static-user {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
