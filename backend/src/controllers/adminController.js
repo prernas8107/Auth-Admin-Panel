@@ -1,6 +1,6 @@
 const User = require('../models/User');
 
-//  Get all users (with search & pagination)
+//  Get all users (with search & filters)
 // GET /api/v1/admin/users
 exports.getAllUsers = async (req, res) => {
     try {
@@ -41,22 +41,68 @@ exports.getAdminStats = async (req, res) => {
     }
 };
 
+//  Create a new user by Admin
+//  POST /api/v1/admin/users
+exports.createUser = async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
+        }
+
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ success: false, message: 'User with this email already exists' });
+        }
+
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role: role === 'admin' ? 'admin' : 'user', // Admin can assign admin or user role
+            status: 'active',
+        });
+
+        const userData = user.toObject();
+        delete userData.password;
+
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            data: userData,
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 //    Update user status or role
 //    PATCH /api/v1/admin/users/:id
 exports.updateUser = async (req, res) => {
     try {
-        const { role, status } = req.body;
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { role, status },
-            { new: true, runValidators: true }
-        ).select('-password');
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@auth.com';
+        const targetUser = await User.findById(req.params.id);
 
-        if (!user) {
+        if (!targetUser) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        res.status(200).json({ success: true, message: 'User updated successfully', data: user });
+        // Primary admin cannot be modified or blocked
+        if (targetUser.email === adminEmail) {
+            return res.status(400).json({ success: false, message: 'Primary administrator account cannot be modified' });
+        }
+
+        const { status } = req.body;
+        if (status) {
+            targetUser.status = status;
+        }
+
+        await targetUser.save();
+        const userData = targetUser.toObject();
+        delete userData.password;
+
+        res.status(200).json({ success: true, message: 'User updated successfully', data: userData });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -66,10 +112,19 @@ exports.updateUser = async (req, res) => {
 //    DELETE /api/v1/admin/users/:id
 exports.deleteUser = async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@auth.com';
+        const user = await User.findById(req.params.id);
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
+
+        // Primary admin cannot be deleted
+        if (user.email === adminEmail) {
+            return res.status(400).json({ success: false, message: 'Primary administrator account cannot be deleted' });
+        }
+
+        await user.deleteOne();
         res.status(200).json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

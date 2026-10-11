@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllUsers,
   getAdminStats,
+  createUser,
   updateUser,
   deleteUser,
 } = require('../controllers/adminController');
@@ -13,7 +14,12 @@ router.use(protect);
 router.use(authorize('admin'));
 
 router.get('/stats', getAdminStats);
-router.get('/users', getAllUsers);
-router.route('/users/:id').patch(updateUser).delete(deleteUser);
+router.route('/users')
+  .get(getAllUsers)
+  .post(createUser);
+
+router.route('/users/:id')
+  .patch(updateUser)
+  .delete(deleteUser);
 
 module.exports = router;
