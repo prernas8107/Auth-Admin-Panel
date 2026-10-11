@@ -588,11 +588,12 @@ body {
 }
 
 .user-table tbody tr {
-  transition: background 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .user-table tbody tr:hover {
-  background: rgba(255, 120, 0, 0.07);
+  background: rgba(255, 120, 0, 0.08);
+  box-shadow: inset 3px 0 0 var(--orange-primary);
 }
 
 .user-cell {
