@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../api/axiosInstance';
-import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export default function Register() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,13 +15,9 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const res = await API.post('/auth/register', formData);
-      login(res.data.data, res.data.data.token);
-      if (res.data.data.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      await API.post('/auth/register', formData);
+      // Registration successful — redirect to login page
+      navigate('/login', { state: { message: 'Registration successful! Please login.' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Try again.');
     } finally {
