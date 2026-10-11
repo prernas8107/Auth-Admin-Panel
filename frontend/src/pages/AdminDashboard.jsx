@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
-import { Users, ShieldAlert, UserCheck, Shield, Search, Trash2, UserX, LogOut } from 'lucide-react';
+import {
+  Users,
+  ShieldAlert,
+  UserCheck,
+  Shield,
+  Search,
+  Trash2,
+  UserX,
+  LogOut,
+  UserPlus,
+  X,
+  Lock,
+  Mail,
+  User,
+} from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -11,6 +25,12 @@ export default function AdminDashboard() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Add User Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUserData, setNewUserData] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
 
   const fetchStats = async () => {
     try {
@@ -40,25 +60,44 @@ export default function AdminDashboard() {
     fetchUsers();
   }, [search, roleFilter, statusFilter]);
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleToggleStatus = async (id, currentStatus, email) => {
+    if (email === 'admin@auth.com') {
+      alert('Primary admin account cannot be blocked!');
+      return;
+    }
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
     await API.patch(`/admin/users/${id}`, { status: newStatus });
     fetchUsers();
     fetchStats();
   };
 
-  const handleToggleRole = async (id, currentRole) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    await API.patch(`/admin/users/${id}`, { role: newRole });
-    fetchUsers();
-    fetchStats();
-  };
-
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, email) => {
+    if (email === 'admin@auth.com') {
+      alert('Primary admin account cannot be deleted!');
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this user?')) {
       await API.delete(`/admin/users/${id}`);
       fetchUsers();
       fetchStats();
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setAddError('');
+    setAddLoading(true);
+
+    try {
+      await API.post('/admin/users', newUserData);
+      setShowAddModal(false);
+      setNewUserData({ name: '', email: '', password: '', role: 'user' });
+      fetchUsers();
+      fetchStats();
+    } catch (err) {
+      setAddError(err.response?.data?.message || 'Failed to create user');
+    } finally {
+      setAddLoading(false);
     }
   };
 
@@ -94,7 +133,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Controls: Search & Filter */}
+        {/* Controls: Search, Filter & Add User */}
         <div className="table-controls">
           <div className="search-box">
             <Search size={18} />
@@ -105,17 +144,24 @@ export default function AdminDashboard() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="filter-group">
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-              <option value="">All Roles</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="blocked">Blocked</option>
-            </select>
+
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+            <div className="filter-group">
+              <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="">All Roles</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="blocked">Blocked</option>
+              </select>
+            </div>
+
+            <button onClick={() => setShowAddModal(true)} className="btn-add-user">
+              <UserPlus size={16} /> Add User
+            </button>
           </div>
         </div>
 
@@ -133,46 +179,59 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u._id}>
-                  <td className="user-cell">
-                    <div className="avatar-small">{u.name.charAt(0).toUpperCase()}</div>
-                    <span>{u.name}</span>
-                  </td>
-                  <td>{u.email}</td>
-                  <td>
-                    <button
-                      onClick={() => handleToggleRole(u._id, u.role)}
-                      className={`badge-btn ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}`}
-                      title="Click to toggle role"
-                    >
-                      {u.role.toUpperCase()}
-                    </button>
-                  </td>
-                  <td>
-                    <span className={`status-pill ${u.status === 'active' ? 'status-active' : 'status-blocked'}`}>
-                      {u.status}
-                    </span>
-                  </td>
-                  <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                  <td className="actions-cell">
-                    <button
-                      onClick={() => handleToggleStatus(u._id, u.status)}
-                      className={`btn-icon ${u.status === 'active' ? 'btn-warn' : 'btn-success'}`}
-                      title={u.status === 'active' ? 'Block User' : 'Activate User'}
-                    >
-                      {u.status === 'active' ? <UserX size={16} /> : <UserCheck size={16} />}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(u._id)}
-                      className="btn-icon btn-danger"
-                      title="Delete User"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((u) => {
+                const isSuperAdmin = u.email === 'admin@auth.com' || u.role === 'admin';
+                return (
+                  <tr key={u._id}>
+                    <td className="user-cell">
+                      <div className="avatar-small">{u.name.charAt(0).toUpperCase()}</div>
+                      <span>{u.name}</span>
+                    </td>
+                    <td>{u.email}</td>
+                    <td>
+                      {isSuperAdmin ? (
+                        <span className="badge-super-admin">
+                          <Shield size={12} /> ADMIN
+                        </span>
+                      ) : (
+                        <span className="badge-static-user">
+                          USER
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`status-pill ${u.status === 'active' ? 'status-active' : 'status-blocked'}`}>
+                        {u.status}
+                      </span>
+                    </td>
+                    <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="actions-cell">
+                      {isSuperAdmin ? (
+                        <span style={{ fontSize: '12px', color: 'var(--yellow-primary)', fontWeight: 600 }}>
+                          Protected
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleToggleStatus(u._id, u.status, u.email)}
+                            className={`btn-icon ${u.status === 'active' ? 'btn-warn' : 'btn-success'}`}
+                            title={u.status === 'active' ? 'Block User' : 'Activate User'}
+                          >
+                            {u.status === 'active' ? <UserX size={16} /> : <UserCheck size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(u._id, u.email)}
+                            className="btn-icon btn-danger"
+                            title="Delete User"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {users.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center">No users found.</td>
@@ -182,6 +241,107 @@ export default function AdminDashboard() {
           </table>
         </div>
       </main>
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create New User</h3>
+              <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {addError && <div className="alert alert-error">{addError}</div>}
+
+            <form onSubmit={handleCreateUser}>
+              <div className="input-group">
+                <label>Full Name</label>
+                <div className="input-wrapper">
+                  <User className="input-icon" size={18} />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter user name"
+                    value={newUserData.name}
+                    onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Email Address</label>
+                <div className="input-wrapper">
+                  <Mail className="input-icon" size={18} />
+                  <input
+                    type="email"
+                    required
+                    placeholder="user@example.com"
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Password</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" size={18} />
+                  <input
+                    type="password"
+                    required
+                    placeholder="Min 6 characters"
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Assign Role</label>
+                <div className="input-wrapper">
+                  <Shield className="input-icon" size={18} />
+                  <select
+                    value={newUserData.role}
+                    onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-white)',
+                      outline: 'none',
+                      fontSize: '14px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="user" style={{ background: '#141414', color: '#fff' }}>Standard User</option>
+                    <option value="admin" style={{ background: '#141414', color: '#fff' }}>Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: 'auto', padding: '10px 22px' }}
+                  disabled={addLoading}
+                >
+                  {addLoading ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
