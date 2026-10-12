@@ -93,9 +93,18 @@ exports.updateUser = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Primary administrator account cannot be modified' });
         }
 
-        const { status } = req.body;
+        // Admin cannot modify themselves (block/role change)
+        if (targetUser._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ success: false, message: 'You cannot modify your own account' });
+        }
+
+        const { status, role } = req.body;
+
         if (status) {
             targetUser.status = status;
+        }
+        if (role && (role === 'admin' || role === 'user')) {
+            targetUser.role = role;
         }
 
         await targetUser.save();
@@ -122,6 +131,11 @@ exports.deleteUser = async (req, res) => {
         // Primary admin cannot be deleted
         if (user.email === adminEmail) {
             return res.status(400).json({ success: false, message: 'Primary administrator account cannot be deleted' });
+        }
+
+        // Admin cannot delete themselves
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
         }
 
         await user.deleteOne();
