@@ -7,8 +7,6 @@ import {
   UserCheck,
   Shield,
   Search,
-  Trash2,
-  UserX,
   LogOut,
   UserPlus,
   X,
@@ -62,7 +60,11 @@ export default function AdminDashboard() {
 
   const handleToggleStatus = async (id, currentStatus, email) => {
     if (email === 'admin@auth.com') {
-      alert('Primary admin account cannot be blocked!');
+      alert('⛔ Primary admin account cannot be blocked!');
+      return;
+    }
+    if (email === user?.email) {
+      alert('⚠️ You cannot block or unblock your own account!');
       return;
     }
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
@@ -71,9 +73,31 @@ export default function AdminDashboard() {
     fetchStats();
   };
 
+  const handleToggleRole = async (id, currentRole, email) => {
+    if (email === 'admin@auth.com') {
+      alert('⛔ Primary admin account role cannot be changed!');
+      return;
+    }
+    if (email === user?.email) {
+      alert('⚠️ You cannot change your own role!');
+      return;
+    }
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const action = newRole === 'admin' ? 'promote to Admin' : 'demote to User';
+    if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+      await API.patch(`/admin/users/${id}`, { role: newRole });
+      fetchUsers();
+      fetchStats();
+    }
+  };
+
   const handleDelete = async (id, email) => {
     if (email === 'admin@auth.com') {
-      alert('Primary admin account cannot be deleted!');
+      alert('⛔ Primary admin account cannot be deleted!');
+      return;
+    }
+    if (email === user?.email) {
+      alert('⚠️ You cannot delete your own account!');
       return;
     }
     if (window.confirm('Are you sure you want to delete this user?')) {
@@ -180,7 +204,7 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {users.map((u) => {
-                const isSuperAdmin = u.email === 'admin@auth.com' || u.role === 'admin';
+                const isSuperAdmin = u.email === 'admin@auth.com';
                 return (
                   <tr key={u._id}>
                     <td className="user-cell">
@@ -189,7 +213,7 @@ export default function AdminDashboard() {
                     </td>
                     <td>{u.email}</td>
                     <td>
-                      {isSuperAdmin ? (
+                      {u.role === 'admin' ? (
                         <span className="badge-super-admin">
                           <Shield size={12} /> ADMIN
                         </span>
@@ -213,18 +237,22 @@ export default function AdminDashboard() {
                       ) : (
                         <>
                           <button
-                            onClick={() => handleToggleStatus(u._id, u.status, u.email)}
-                            className={`btn-icon ${u.status === 'active' ? 'btn-warn' : 'btn-success'}`}
-                            title={u.status === 'active' ? 'Block User' : 'Activate User'}
+                            onClick={() => handleToggleRole(u._id, u.role, u.email)}
+                            className={`btn-action ${u.role === 'admin' ? 'btn-warn' : 'btn-promote'}`}
                           >
-                            {u.status === 'active' ? <UserX size={16} /> : <UserCheck size={16} />}
+                            {u.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(u._id, u.status, u.email)}
+                            className={`btn-action ${u.status === 'active' ? 'btn-block' : 'btn-success'}`}
+                          >
+                            {u.status === 'active' ? 'Block' : 'Unblock'}
                           </button>
                           <button
                             onClick={() => handleDelete(u._id, u.email)}
-                            className="btn-icon btn-danger"
-                            title="Delete User"
+                            className="btn-action btn-danger"
                           >
-                            <Trash2 size={16} />
+                            Delete
                           </button>
                         </>
                       )}
