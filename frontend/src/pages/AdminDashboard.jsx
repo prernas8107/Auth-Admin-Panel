@@ -145,7 +145,7 @@ export default function AdminDashboard() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+          <div className="controls-right">
             <div className="filter-group">
               <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                 <option value="">All Roles</option>
